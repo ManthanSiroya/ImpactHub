@@ -6,6 +6,22 @@ ImpactHub enables reliable field operations, intelligent task prioritization, re
 
 ---
 
+## 📑 Table of Contents
+
+* [🎯 Vision](#-vision)
+* [✨ Key Features](#-key-features)
+* [🏗️ Architecture Highlights](#️-architecture-highlights)
+* [📸 Screenshots](#-screenshots)
+* [🛠️ Tech Stack](#️-tech-stack)
+* [🚀 Getting Started](#-getting-started)
+* [📂 Project Structure](#-project-structure)
+* [🔄 Current Development Status](#-current-development-status)
+* [🗺️ Roadmap](#️-roadmap)
+* [🤝 Contributing](#-contributing)
+* [📝 License](#-license)
+
+---
+
 ## 🎯 Vision
 
 Disaster response and community outreach programs often operate in areas with poor connectivity. Traditional systems assume a constant internet connection, resulting in delayed reporting, synchronization issues, and inefficient resource allocation.
