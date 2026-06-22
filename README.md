@@ -91,15 +91,15 @@ Add screenshots here.
 
 ### Dashboard
 
-![ DashBoard ](<Screenshot 2026-06-23 032637.png>)
+![ DashBoard ](<public/Screenshots/Screenshot 2026-06-23 032637.png>)
 
 ### Needs Heat Map
 
-![ HeatMap ](<Screenshot 2026-06-23 032907.png>)
+![ HeatMap ](<public/Screenshots/Screenshot 2026-06-23 032907.png>)
 
 ### Volunteer Profile
 
-![ Profile ](<Screenshot 2026-06-23 033014.png>)
+![ Profile ](<public/Screenshots/Screenshot 2026-06-23 033014.png>)
 
 ---
 
