@@ -1,8 +1,8 @@
 # ImpactHub 🌍
 
-A modern, offline-first NGO coordination platform designed to bridge the gap between central organizers and on-the-ground volunteers.
+A modern, offline-first NGO coordination platform designed to bridge the gap between central organizers and on-the-ground volunteers. 
 
-ImpactHub enables reliable field operations, intelligent task prioritization, resilient data collection, and community impact tracking even in environments with unstable or unavailable internet connectivity.
+Designed originally for the **Google Solution AI Challenge**, ImpactHub addresses a critical data fragmentation issue in the social sector, enabling reliable field operations, intelligent task prioritization, resilient data collection, and community impact tracking even in environments with unstable or unavailable internet connectivity.
 
 ---
 
@@ -22,11 +22,13 @@ ImpactHub enables reliable field operations, intelligent task prioritization, re
 
 ---
 
-## 🎯 Vision
+## 🎯 The Objective
 
-Disaster response and community outreach programs often operate in areas with poor connectivity. Traditional systems assume a constant internet connection, resulting in delayed reporting, synchronization issues, and inefficient resource allocation.
+**The Problem:** 
+Local social groups and NGOs collect a lot of important information about community needs through paper surveys and field reports. However, this valuable data is often scattered across different places, making it hard to see the biggest problems clearly. Additionally, traditional systems assume a constant internet connection, resulting in delayed reporting and synchronization issues in disaster zones or remote areas.
 
-ImpactHub is built to solve this problem through an offline-first architecture that allows volunteers and organizers to coordinate effectively regardless of network conditions.
+**The Solution:** 
+ImpactHub is a powerful system that gathers scattered community information to clearly show the most urgent local needs. It features a smart matching system to quickly connect available volunteers with the specific tasks and areas where they are needed most, utilizing a resilient offline-first architecture that allows coordination to continue effectively regardless of network conditions.
 
 ---
 
