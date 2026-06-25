@@ -103,6 +103,17 @@ ImpactHub is a powerful system that gathers scattered community information to c
 
 ---
 
+## ⚙️ Engineering & Simulation (Under the Hood)
+
+To accurately demonstrate the platform's capabilities without a live backend, I engineered several complex frontend simulations. The UI is completely decoupled from hardcoded text and is entirely driven by state logic and mock data structures.
+
+* **Automated Data Pipeline:** The Data Pipeline dashboard utilizes `setInterval` logic to automatically generate and inject new field issues over time, simulating a live, high-traffic crisis center.
+* **Offline Sync Simulation:** The Offline Field App features a functioning local queue. When the "Offline" mode is toggled, form submissions are intercepted, stored in a local state array, and held. Once toggled back to "Online," the queue automatically unloads and syncs with the central mock database.
+* **Dynamic Heatmap Randomizer:** The community needs heatmap isn't a static image. It utilizes a randomization algorithm to generate coordinate clusters based on severity, visually demonstrating how the app maps dynamic field reports.
+* **Strict State Management:** All gamified elements (streaks, impact numbers) and urgency scores are derived dynamically from the mock dataset, ensuring the UI accurately reflects the underlying data layer.
+
+---
+
 ## 📸 Screenshots
 
 Add screenshots here.
