@@ -23,9 +23,12 @@ const rankLabels = [
 export const SkillMatcher: React.FC = () => {
   const [showMatches, setShowMatches] = useState(false);
   const [selectedSkillIds, setSelectedSkillIds] = useState<string[]>([]);
+  const [customSkills, setCustomSkills] = useState<string[]>([]); // skills typed by the user that don't exist in mockSkills
+  const [selectedCustomSkills, setSelectedCustomSkills] = useState<string[]>([]); // which custom skills are currently active filters
   const [calculatedMatches, setCalculatedMatches] = useState<typeof mockUsers>([]);
   const [urgency, setUrgency] = useState<'LOW' | 'MEDIUM' | 'HIGH'>('MEDIUM');
   const [radius, setRadius] = useState<number>(8);
+  const [skillSearch, setSkillSearch] = useState('');
 
   const toggleSkill = (id: string) => {
     setSelectedSkillIds(prev =>
@@ -33,36 +36,81 @@ export const SkillMatcher: React.FC = () => {
     );
   };
 
+  const toggleCustomSkill = (name: string) => {
+    setSelectedCustomSkills(prev =>
+      prev.includes(name) ? prev.filter(s => s !== name) : [...prev, name]
+    );
+  };
+
+  const removeCustomSkill = (name: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCustomSkills(prev => prev.filter(s => s !== name));
+    setSelectedCustomSkills(prev => prev.filter(s => s !== name));
+  };
+
+  const filteredSkills = mockSkills.filter(skill =>
+    skill.name.toLowerCase().includes(skillSearch.toLowerCase())
+  );
+
+  // Custom skills that match the current search text (so previously-added ones still filter)
+  const filteredCustomSkills = customSkills.filter(skill =>
+    skill.toLowerCase().includes(skillSearch.toLowerCase())
+  );
+
+  const handleSkillSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== 'Enter') return;
+    const trimmed = skillSearch.trim();
+    if (!trimmed) return;
+
+    e.preventDefault();
+
+    const existing = mockSkills.find(s => s.name.toLowerCase() === trimmed.toLowerCase());
+    if (existing) {
+      // it's a real skill the user just typed out fully — select it
+      if (!selectedSkillIds.includes(existing.id)) {
+        setSelectedSkillIds(prev => [...prev, existing.id]);
+      }
+    } else {
+      const alreadyExists = customSkills.some(s => s.toLowerCase() === trimmed.toLowerCase());
+      if (!alreadyExists) {
+        setCustomSkills(prev => [...prev, trimmed]);
+        setSelectedCustomSkills(prev => [...prev, trimmed]);
+      } else if (!selectedCustomSkills.some(s => s.toLowerCase() === trimmed.toLowerCase())) {
+        setSelectedCustomSkills(prev => [...prev, trimmed]);
+      }
+    }
+    setSkillSearch('');
+  };
+
   const calculateMatches = () => {
-    if (selectedSkillIds.length === 0) {
+    // combine real + custom selected skills into one lowercase list for matching
+    const selectedSkillsList = [
+      ...mockSkills.filter(s => selectedSkillIds.includes(s.id)).map(s => s.name.toLowerCase()),
+      ...selectedCustomSkills.map(s => s.toLowerCase()),
+    ];
+
+    if (selectedSkillsList.length === 0) {
       setCalculatedMatches([]);
       setShowMatches(true);
       return;
     }
 
-    const selectedSkillsList = mockSkills
-      .filter(s => selectedSkillIds.includes(s.id))
-      .map(s => s.name.toLowerCase());
-
     let scored = mockUsers
       .filter(v => v.availability.length > 0 && (v.dist || 0) <= radius)
       .map(v => {
         const userSkills = v.skills || [];
-        const matchingSkills = userSkills.filter(skill => 
+        const matchingSkills = userSkills.filter(skill =>
           selectedSkillsList.includes(skill.toLowerCase())
         );
-        
-        const sim = selectedSkillsList.length > 0 
-          ? matchingSkills.length / selectedSkillsList.length 
+
+        const sim = selectedSkillsList.length > 0
+          ? matchingSkills.length / selectedSkillsList.length
           : 0;
 
         return { ...v, sim, matchingSkills };
       });
 
-    // Filter out users with 0 similarity
     scored = scored.filter(v => (v.sim || 0) > 0);
-
-    // Strictly descending sort based on sim score
     scored.sort((a, b) => (b.sim || 0) - (a.sim || 0));
     const top3 = scored.slice(0, 3);
 
@@ -72,10 +120,7 @@ export const SkillMatcher: React.FC = () => {
       else if (index === 1) badge = '2nd match';
       else if (index === 2) badge = '3rd match';
 
-      return {
-        ...user,
-        matchBadge: badge,
-      };
+      return { ...user, matchBadge: badge };
     });
 
     setCalculatedMatches(badgedTop3);
@@ -92,33 +137,16 @@ export const SkillMatcher: React.FC = () => {
   const volunteerStats: VolunteerStatViewModel[] =
     mockVolunteerStats.map(stat => {
       if (stat.id === 'v1') {
-        return {
-          ...stat,
-          value: mockUsers.length
-        };
+        return { ...stat, value: mockUsers.length };
       }
-
       if (stat.id === 'v2') {
-        return {
-          ...stat,
-          value: mockUsers.filter(
-            u => u.availability.length > 0
-          ).length
-        };
+        return { ...stat, value: mockUsers.filter(u => u.availability.length > 0).length };
       }
-
-      return {
-        ...stat,
-        value: stat.value || 0
-      };
+      return { ...stat, value: stat.value || 0 };
     });
 
-  // Derive matched volunteers from mockUsers
   const matchedVolunteers: MatchedVolunteerViewModel[] = mockUsers.filter(u => u.id !== 'usr-1').slice(0, 3).map(user => {
-    // Relational lookup: User's location
     const location = mockLocations.find(l => l.id === user.locationId);
-
-    // Relational lookup: User's skills
     const tags = mockUserSkills
       .filter(us => us.userId === user.id)
       .map(us => mockSkills.find(s => s.id === us.skillId)?.name.toLowerCase())
@@ -132,23 +160,16 @@ export const SkillMatcher: React.FC = () => {
       role: user.role,
       tags: tags.length > 0 ? tags : ['general volunteer'],
       location: location?.region || 'Unknown',
-      distance: `${user.maxDistanceKm}km`, // mock distance from maxDistance
+      distance: `${user.maxDistanceKm}km`,
       streak: `${user.currentStreak}d streak`,
       tier: user.tier,
     };
   });
 
   return (
-    <motion.div
-      className="dashboard-content"
-      variants={containerVariants}
-      initial="hidden"
-      animate="show"
-    >
+    <motion.div className="dashboard-content" variants={containerVariants} initial="hidden" animate="show">
       <div className="two-col">
-        {/* Left Column */}
         <div className="col-left dashboard-column">
-          {/* Flag a Community Need */}
           <motion.div variants={itemVariants} className="card">
             <h4 className="snapshot-title card-spacing">FLAG A COMMUNITY NEED</h4>
 
@@ -159,8 +180,16 @@ export const SkillMatcher: React.FC = () => {
 
             <div className="form-group">
               <label className="form-label">REQUIRED SKILLS</label>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="Search or type a skill and press Enter..."
+                value={skillSearch}
+                onChange={(e) => setSkillSearch(e.target.value)}
+                onKeyDown={handleSkillSearchKeyDown}
+              />
               <div className="tags-container">
-                {mockSkills.map(skill => {
+                {filteredSkills.map(skill => {
                   const isSelected = selectedSkillIds.includes(skill.id);
                   return (
                     <div
@@ -172,27 +201,38 @@ export const SkillMatcher: React.FC = () => {
                     </div>
                   );
                 })}
+                {filteredCustomSkills.map(skill => {
+                  const isSelected = selectedCustomSkills.includes(skill);
+                  return (
+                    <div
+                      key={`custom-${skill}`}
+                      className={`tag-selectable tag-custom ${isSelected ? 'selected' : ''}`}
+                      onClick={() => toggleCustomSkill(skill)}
+                    >
+                      {skill.toLowerCase()}
+                      <i
+                        className="fa-solid fa-xmark tag-remove-icon"
+                        onClick={(e) => removeCustomSkill(skill, e)}
+                      ></i>
+                    </div>
+                  );
+                })}
+                {skillSearch.trim() &&
+                  !filteredSkills.some(s => s.name.toLowerCase() === skillSearch.trim().toLowerCase()) &&
+                  !filteredCustomSkills.some(s => s.toLowerCase() === skillSearch.trim().toLowerCase()) && (
+                    <div className="tag-selectable tag-add-hint" onClick={() => handleSkillSearchKeyDown({ key: 'Enter', preventDefault: () => {} } as React.KeyboardEvent<HTMLInputElement>)}>
+                      + add "{skillSearch.trim().toLowerCase()}"
+                    </div>
+                )}
               </div>
             </div>
 
             <div className="form-group">
               <label className="form-label">URGENCY LEVEL</label>
               <div className="segmented-control">
-                <div
-                  className={`segment ${urgency === 'LOW' ? 'selected-low' : ''}`}
-                  style={getUrgencyStyles('LOW')}
-                  onClick={() => setUrgency('LOW')}
-                >Low</div>
-                <div
-                  className={`segment ${urgency === 'MEDIUM' ? 'selected-medium' : ''}`}
-                  style={getUrgencyStyles('MEDIUM')}
-                  onClick={() => setUrgency('MEDIUM')}
-                >Medium</div>
-                <div
-                  className={`segment ${urgency === 'HIGH' ? 'selected-high' : ''}`}
-                  style={getUrgencyStyles('HIGH')}
-                  onClick={() => setUrgency('HIGH')}
-                >High</div>
+                <div className={`segment ${urgency === 'LOW' ? 'selected-low' : ''}`} style={getUrgencyStyles('LOW')} onClick={() => setUrgency('LOW')}>Low</div>
+                <div className={`segment ${urgency === 'MEDIUM' ? 'selected-medium' : ''}`} style={getUrgencyStyles('MEDIUM')} onClick={() => setUrgency('MEDIUM')}>Medium</div>
+                <div className={`segment ${urgency === 'HIGH' ? 'selected-high' : ''}`} style={getUrgencyStyles('HIGH')} onClick={() => setUrgency('HIGH')}>High</div>
               </div>
             </div>
 
@@ -206,9 +246,7 @@ export const SkillMatcher: React.FC = () => {
                   max="50"
                   value={radius}
                   onChange={(e) => setRadius(Number(e.target.value))}
-                  style={{
-                    background: `linear-gradient(to right, var(--medical, #26914d) ${(radius / 50) * 100}%, #d5d5d594 ${(radius / 50) * 100}%)`
-                  }}
+                  style={{ background: `linear-gradient(to right, var(--medical, #26914d) ${(radius / 50) * 100}%, #d5d5d594 ${(radius / 50) * 100}%)` }}
                 />
                 <div className="range-text">Within <strong>{radius} km</strong></div>
               </div>
@@ -219,7 +257,6 @@ export const SkillMatcher: React.FC = () => {
             </button>
           </motion.div>
 
-          {/* Top Matches */}
           <motion.div variants={itemVariants}>
             <h4 className="sm-section-title">TOP MATCHES & NOTIFICATIONS</h4>
             {!showMatches ? (
@@ -228,25 +265,14 @@ export const SkillMatcher: React.FC = () => {
                 <div className="empty-text">Flag a need above to see AI-matched volunteers</div>
               </div>
             ) : (
-              <motion.div
-                variants={containerVariants}
-                initial="hidden"
-                animate="show"
-                className="space-y-3"
-              >
+              <motion.div variants={containerVariants} initial="hidden" animate="show" className="space-y-3">
                 {calculatedMatches.map((m, i) => {
                   const rankClass = i === 0 ? 'best' : i === 1 ? 'second' : 'third';
                   return (
-                    <motion.div
-                      key={m.id}
-                      variants={itemVariants}
-                      className={`sm-card sm-card-${rankClass}`}
-                    >
+                    <motion.div key={m.id} variants={itemVariants} className={`sm-card sm-card-${rankClass}`}>
                       <div className="sm-header">
                         <div className="sm-header-left">
-                          <div className={`sm-avatar sm-avatar-${rankClass}`}>
-                            {m.initials}
-                          </div>
+                          <div className={`sm-avatar sm-avatar-${rankClass}`}>{m.initials}</div>
                           <div className="sm-info">
                             <div className="sm-name">{m.name}</div>
                             <div className="sm-role">{m.role} &middot; {m.dist}km away</div>
@@ -288,12 +314,9 @@ export const SkillMatcher: React.FC = () => {
           </motion.div>
         </div>
 
-        {/* Right Column */}
         <div className="col-right dashboard-column">
-          {/* Volunteer Profiles */}
           <motion.div variants={itemVariants} className="card">
             <h4 className="snapshot-title card-spacing">VOLUNTEER PROFILES</h4>
-
             <div className="vol-stats">
               {volunteerStats.map(stat => (
                 <div key={stat.id} className="vol-stat-box">
@@ -302,10 +325,9 @@ export const SkillMatcher: React.FC = () => {
                 </div>
               ))}
             </div>
-
             <motion.div
               className="vol-list"
-              key={selectedSkillIds.join(',') + urgency + radius}
+              key={selectedSkillIds.join(',') + selectedCustomSkills.join(',') + urgency + radius}
               variants={containerVariants}
               initial="hidden"
               animate="show"
@@ -318,7 +340,6 @@ export const SkillMatcher: React.FC = () => {
             </motion.div>
           </motion.div>
 
-          {/* Selected Profile */}
           <motion.div variants={itemVariants} className="card">
             <h4 className="snapshot-title card-spacing">SELECTED PROFILE</h4>
             <div className="empty-state">
