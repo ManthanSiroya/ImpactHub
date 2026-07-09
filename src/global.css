@@ -1052,19 +1052,30 @@ body,
 .tags-container {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 14px;          /* spacing between chips */
+    margin-top: 16px;   /* spacing below search box */
 }
 
 .tag-selectable {
-    padding: 6px 14px;
-    background-color: #f4f3f0;
-    border: 1px solid #e5e4df;
-    border-radius: 16px;
-    font-size: 13px;
-    color: var(--text-main);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 10px 18px;
+    background: #f5f5f2;
+    border: 1px solid #e5e5e5;
+    border-radius: 999px;
+
+    font-size: 15px;
     cursor: pointer;
-    transition: 0.2s;
+
+    transition: all 0.2s ease;
 }
+
+.tag-selectable:hover {
+    background: #ecebe7;
+}
+
 
 .tag-selectable.selected {
     background-color: #2b5c4a;
