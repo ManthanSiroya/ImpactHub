@@ -26,6 +26,9 @@ export const SkillMatcher: React.FC = () => {
   const [calculatedMatches, setCalculatedMatches] = useState<typeof mockUsers>([]);
   const [urgency, setUrgency] = useState<'LOW' | 'MEDIUM' | 'HIGH'>('MEDIUM');
   const [radius, setRadius] = useState<number>(8);
+  const [skillSearch, setSkillSearch] = useState('');
+  const [customSkills, setCustomSkills] = useState<string[]>([]);
+  const [selectedCustomSkills, setSelectedCustomSkills] = useState<string[]>([]);
 
   const toggleSkill = (id: string) => {
     setSelectedSkillIds(prev =>
@@ -33,8 +36,52 @@ export const SkillMatcher: React.FC = () => {
     );
   };
 
+  const toggleCustomSkill = (name: string) => {
+    setSelectedCustomSkills(prev =>
+      prev.includes(name) ? prev.filter(s => s !== name) : [...prev, name]
+    );
+  };
+
+  const removeCustomSkill = (name: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCustomSkills(prev => prev.filter(s => s !== name));
+    setSelectedCustomSkills(prev => prev.filter(s => s !== name));
+  };
+
+  const filteredSkills = mockSkills.filter(skill =>
+    skill.name.toLowerCase().includes(skillSearch.toLowerCase())
+  );
+
+  const filteredCustomSkills = customSkills.filter(skill =>
+    skill.toLowerCase().includes(skillSearch.toLowerCase())
+  );
+
+  const handleSkillSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== 'Enter') return;
+    const trimmed = skillSearch.trim();
+    if (!trimmed) return;
+
+    e.preventDefault();
+
+    const existing = mockSkills.find(s => s.name.toLowerCase() === trimmed.toLowerCase());
+    if (existing) {
+      if (!selectedSkillIds.includes(existing.id)) {
+        setSelectedSkillIds(prev => [...prev, existing.id]);
+      }
+    } else {
+      const alreadyExists = customSkills.some(s => s.toLowerCase() === trimmed.toLowerCase());
+      if (!alreadyExists) {
+        setCustomSkills(prev => [...prev, trimmed]);
+        setSelectedCustomSkills(prev => [...prev, trimmed]);
+      } else if (!selectedCustomSkills.some(s => s.toLowerCase() === trimmed.toLowerCase())) {
+        setSelectedCustomSkills(prev => [...prev, trimmed]);
+      }
+    }
+    setSkillSearch('');
+  };
+
   const calculateMatches = () => {
-    if (selectedSkillIds.length === 0) {
+    if (selectedSkillIds.length === 0 && selectedCustomSkills.length === 0) {
       setCalculatedMatches([]);
       setShowMatches(true);
       return;
@@ -42,7 +89,8 @@ export const SkillMatcher: React.FC = () => {
 
     const selectedSkillsList = mockSkills
       .filter(s => selectedSkillIds.includes(s.id))
-      .map(s => s.name.toLowerCase());
+      .map(s => s.name.toLowerCase())
+      .concat(selectedCustomSkills.map(s => s.toLowerCase()));
 
     let scored = mockUsers
       .filter(v => v.availability.length > 0 && (v.dist || 0) <= radius)
@@ -159,8 +207,16 @@ export const SkillMatcher: React.FC = () => {
 
             <div className="form-group">
               <label className="form-label">REQUIRED SKILLS</label>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="Search or type a skill and press Enter..."
+                value={skillSearch}
+                onChange={(e) => setSkillSearch(e.target.value)}
+                onKeyDown={handleSkillSearchKeyDown}
+              />
               <div className="tags-container">
-                {mockSkills.map(skill => {
+                {filteredSkills.map(skill => {
                   const isSelected = selectedSkillIds.includes(skill.id);
                   return (
                     <div
@@ -172,6 +228,34 @@ export const SkillMatcher: React.FC = () => {
                     </div>
                   );
                 })}
+                {filteredCustomSkills.map(skill => {
+                  const isSelected = selectedCustomSkills.includes(skill);
+                  return (
+                    <div
+                      key={`custom-${skill}`}
+                      className={`tag-selectable tag-custom ${isSelected ? 'selected' : ''}`}
+                      onClick={() => toggleCustomSkill(skill)}
+                    >
+                      {skill.toLowerCase()}
+                      <i
+                        className="fa-solid fa-xmark tag-remove-icon"
+                        onClick={(e) => removeCustomSkill(skill, e)}
+                      ></i>
+                    </div>
+                  );
+                })}
+                {skillSearch.trim() &&
+                  !filteredSkills.some(s => s.name.toLowerCase() === skillSearch.trim().toLowerCase()) &&
+                  !filteredCustomSkills.some(s => s.toLowerCase() === skillSearch.trim().toLowerCase()) && (
+                    <div
+                      className="tag-selectable tag-add-hint"
+                      onClick={() =>
+                        handleSkillSearchKeyDown({ key: 'Enter', preventDefault: () => {} } as React.KeyboardEvent<HTMLInputElement>)
+                      }
+                    >
+                      + add "{skillSearch.trim().toLowerCase()}"
+                    </div>
+                )}
               </div>
             </div>
 
@@ -305,7 +389,7 @@ export const SkillMatcher: React.FC = () => {
 
             <motion.div
               className="vol-list"
-              key={selectedSkillIds.join(',') + urgency + radius}
+              key={selectedSkillIds.join(',') + selectedCustomSkills.join(',') + urgency + radius}
               variants={containerVariants}
               initial="hidden"
               animate="show"
